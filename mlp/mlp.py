@@ -147,7 +147,7 @@ class MLP(object):
         """
 
         # Since we are dealing with a one hidden layer MLP, this will translate
-        # into a HiddenLayer with a tanh activation function connected to the
+        # into a HiddenLayer with a relu activation function connected to the
         # LogisticRegression layer; the activation function can be replaced by
         # sigmoid or any other nonlinear function
         self.hiddenLayer = HiddenLayer(
@@ -155,7 +155,7 @@ class MLP(object):
             input=input,
             n_in=n_in,
             n_out=n_hidden,
-            activation=T.tanh
+            activation=T.nnet.relu
         )
 
         # The logistic regression layer gets as input the hidden units
