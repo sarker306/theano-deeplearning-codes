@@ -1,0 +1,35 @@
+# Ignore List
+
+# Temp files
+*~
+*.pyc
+*.swp
+*.swo
+*.DS_Store
+*.tmp
+*.log
+*.bak
+*.dat
+*.out
+*.pid
+*.seed
+*~.nib
+.metadata
+*.rdb
+
+# OS temp
+.Trashes
+$RECYCLE.BIN/
+
+# All native editor/IDE files
+.idea
+.settings
+.eclipse
+.project
+.classpath
+.cproject
+.buildpath
+.loadpath
+*.pydevproject
+*.sublime-workspace
+*.sublime-project
