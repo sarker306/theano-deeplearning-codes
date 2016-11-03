@@ -171,6 +171,90 @@ class LogisticRegression(object):
         else:
             raise NotImplementedError()
 
+def unpickle(file):
+    import cPickle
+    fo = open(file, 'rb')
+    dict = cPickle.load(fo)
+    fo.close()
+    return dict
+
+def load_data_cifar():
+    ''' Loads the dataset CIFAR - 10
+    :type dataset: string
+    :param dataset: the path to the dataset (here CIFAR-10)
+    '''
+    import numpy as np
+
+    xs = []
+    ys = []
+    for j in range(5):
+      d = unpickle('../data/data_batch_'+`j+1`)
+      x = d['data']
+      y = d['labels']
+      xs.append(x)
+      ys.append(y)
+
+    d = unpickle('../data/test_batch')
+    xs.append(d['data'])
+    ys.append(d['labels'])
+
+    train_set_en = 40000
+    valid_set_en = 50000
+
+    x = np.concatenate(xs)/np.float32(255)
+    y = np.concatenate(ys)
+    x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
+    x = x.reshape((x.shape[0], 32, 32, 3)).transpose(0,3,1,2)
+
+    # subtract per-pixel mean
+    pixel_mean = np.mean(x[0:50000],axis=0)
+    #pickle.dump(pixel_mean, open("cifar10-pixel_mean.pkl","wb"))
+    x -= pixel_mean
+
+    # create mirrored images
+    X_train = x[0:40000,:,:,:]
+    Y_train = y[0:40000]
+    X_train_flip = X_train[:,:,:,::-1]
+    Y_train_flip = Y_train
+    X_train = np.concatenate((X_train,X_train_flip),axis=0)
+    Y_train = np.concatenate((Y_train,Y_train_flip),axis=0)
+    X_valid = x[40000:50000]
+    Y_valid = y[40000:50000]
+
+    X_test = x[50000:,:,:,:]
+    Y_test = y[50000:]
+
+    def shared_dataset(data_x, data_y, borrow=True):
+        """ Function that loads the dataset into shared variables
+
+        The reason we store our dataset in shared variables is to allow
+        Theano to copy it into the GPU memory (when code is run on GPU).
+        Since copying data into the GPU is slow, copying a minibatch everytime
+        is needed (the default behaviour if the data is not in a shared
+        variable) would lead to a large decrease in performance.
+        """
+        shared_x = theano.shared(numpy.asarray(data_x,
+                                               dtype=theano.config.floatX),
+                                 borrow=borrow)
+        shared_y = theano.shared(numpy.asarray(data_y,
+                                               dtype=theano.config.floatX),
+                                 borrow=borrow)
+        # When storing data on the GPU it has to be stored as floats
+        # therefore we will store the labels as ``floatX`` as well
+        # (``shared_y`` does exactly that). But during our computations
+        # we need them as ints (we use labels as index, and if they are
+        # floats it doesn't make sense) therefore instead of returning
+        # ``shared_y`` we will have to cast it to int. This little hack
+        # lets ous get around this issue
+        return shared_x, T.cast(shared_y, 'int32')
+
+    test_set_x, test_set_y = shared_dataset(X_test, Y_test)
+    valid_set_x, valid_set_y = shared_dataset(X_valid, Y_valid)
+    train_set_x, train_set_y = shared_dataset(X_train, Y_train)
+
+    rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
+            (test_set_x, test_set_y)]
+    return rval
 
 def load_data(dataset):
     ''' Loads the dataset
@@ -186,7 +270,7 @@ def load_data(dataset):
     # Download the MNIST dataset if it is not present
     data_dir, data_file = os.path.split(dataset)
     if data_dir == "" and not os.path.isfile(dataset):
-        # Check if dataset is in the data directory.
+        # Check if dataset is in the data directory
         new_path = os.path.join(
             os.path.split(__file__)[0],
             "..",

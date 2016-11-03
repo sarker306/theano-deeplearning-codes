@@ -34,7 +34,7 @@ import theano
 import theano.tensor as T
 
 
-from logistic_sgd import LogisticRegression, load_data
+from logistic_sgd import LogisticRegression, load_data, load_data_cifar
 
 
 # start-snippet-1
@@ -155,7 +155,7 @@ class MLP(object):
             input=input,
             n_in=n_in,
             n_out=n_hidden,
-            activation=T.nnet.relu
+            activation=T.tanh
         )
 
         # The logistic regression layer gets as input the hidden units
